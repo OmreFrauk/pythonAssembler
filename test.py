@@ -1,8 +1,8 @@
 import assembler
 from assembler import *
 def main():
-    assembler1 = Converter.reg_to_binary(dest="R11",src_1="R12",src_2="R13")
-    print(assembler1)
+    assembler1 = Converter("test")
+    print(assembler1.imm_to_binary(number = 5))
 if __name__ == '__main__':
     main()
 
