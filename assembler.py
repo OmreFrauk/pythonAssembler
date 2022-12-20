@@ -6,22 +6,48 @@ class Assembler:
 
     def read_ins(self):
         temp = []
-        with open(self.inputFile, 'r', encoding='UTF-8') as file:
+        with open(self.inputFile, "r", encoding="UTF-8") as file:
             for line in file:
                 temp.append(line.strip())
         self.instructions = temp
 
 
+    def write_to_file(self, array):
+        with open(self.output, 'w') as file:
+            file.write("v2.0 raw \n")
+            for line in array:
+                file.write(line+"\t")
+    def start(self):
+        self.read_ins()
+        conv =Converter(self.instructions)
+        conv.convert()
+        self.write_to_file(conv.hex_codes)
+
 class Converter:
     def __init__(self, instructions):
         self.instructions = instructions
-        self.binary_code = []
-        self.hex_code = []
+        self.binary_codes = []
+        self.hex_codes = []
 
-        self.opcode_dict = {"ADD": "00001", "SUB": "00010", "ADDI": "00011", "SUBI": "00100", "AND": "00101",
-                            "ANDI": "00110", "OR": "00111", "ORI": "01000", "XOR": "01001", "XORI": "01010",
-                            "LD": "01011", "ST": "01100", "JUMP": "01101", "PUSH": "01110", "POP": "01111",
-                            "BE": "10000", "BNE": "10001"}
+        self.opcode_dict = {
+            "ADD": "00001",
+            "SUB": "00010",
+            "ADDI": "00011",
+            "SUBI": "00100",
+            "AND": "00101",
+            "ANDI": "00110",
+            "OR": "00111",
+            "ORI": "01000",
+            "XOR": "01001",
+            "XORI": "01010",
+            "LD": "01011",
+            "ST": "01100",
+            "JUMP": "01101",
+            "PUSH": "01110",
+            "POP": "01111",
+            "BE": "10000",
+            "BNE": "10001",
+        }
 
     def convert(self):
         for instruction in self.instructions:
@@ -29,9 +55,8 @@ class Converter:
 
             line = instruction.split(" ")
             operation = line[0]
-            print(operation)
-            binary_code += operation
             arguments = line[1].split(",")
+            opcode = self.opcode_dict.get(operation)
             if (
                     operation == "ADD"
                     or operation == "SUB"
@@ -44,8 +69,11 @@ class Converter:
                 src_2 = arguments[2]
 
                 registers = self.reg_to_binary(dest=dest, src_1=src_1, src_2=src_2)
-                binary_code += self.opcode_dict.get(operation).join(registers).zfill(20)
-            if (
+                binary_code += "".join(registers)
+                binary_code = opcode + binary_code + "000"
+
+                print(binary_code)
+            elif (
                     operation == "ADDI"
                     or operation == "SUBI"
                     or operation == "ANDI"
@@ -57,8 +85,42 @@ class Converter:
                 imm = arguments[2]
                 registers = self.reg_to_binary(dest=dest, src_1=src_1)
                 immediate = self.imm_to_binary(imm=imm)
-                binary_code += ''.join(registers)
-                binary_code += ''.join(immediate)
+                binary_code = opcode + "".join(registers) + "".join(immediate)
+            elif operation == "LD":
+                dest = arguments[0]
+                address = arguments[1]
+                registers = self.reg_to_binary(dest=dest)
+                address = self.address_to_binary(11, address=address)
+                binary_code = opcode + "".join(registers) + "".join(address)
+            elif operation == "ST":
+                src_1 = arguments[0]
+                address = arguments[1]
+                registers = self.reg_to_binary(src_1=src_1)
+                address = self.address_to_binary(11, address=address)
+                binary_code = opcode + "".join(registers) + "".join(address)
+            elif operation == "JUMP":
+                address = arguments[0]
+                address = self.address_to_binary(15, address=address)
+                binary_code = opcode + "".join(address)
+            elif operation == "PUSH" or operation == "POP":
+                src_1 = arguments[0]
+                registers = self.reg_to_binary(src_1=src_1)
+                binary_code = opcode + "".join(registers) + "00000000000"
+            elif operation == "BE" or operation == "BNE":
+                src_1 = arguments[0]
+                src_2 = arguments[1]
+                addrs = arguments[2]
+                registers = self.reg_to_binary(src_1=src_1, src_2=src_2)
+                address = self.address_to_binary(7, addrs=addrs)
+                binary_code = opcode + "".join(registers) + "".join(address)
+            self.binary_codes.append(binary_code)
+            print(binary_code)
+            self.binary_to_hex()
+
+    def binary_to_hex(self):
+        for binary in self.binary_codes:
+            hexa = hex(int(binary, 2))
+            self.hex_codes.append(hexa[2:].upper())
 
     @staticmethod
     def reg_to_binary(**kwargs):
@@ -79,9 +141,7 @@ class Converter:
             absolute = abs(int(i))
             bin_val = str(bin(absolute - 1))[2:].zfill(length)
             twos_comp = (
-                bin_val.replace("1", "%temp%")
-                    .replace("0", "1")
-                    .replace("%temp%", "0")
+                bin_val.replace("1", "%temp%").replace("0", "1").replace("%temp%", "0")
             )
         return twos_comp
 

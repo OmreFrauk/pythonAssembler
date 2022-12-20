@@ -2,8 +2,8 @@ from assembler import *
 
 
 def main():
-    assembler1 = Assembler("opcode.txt", "test")
-    assembler1.read_ins()
+    assembler1 = Assembler("opcode.txt", "output.txt")
+    assembler1.start()
     #print(assembler1.convert())
 
 
