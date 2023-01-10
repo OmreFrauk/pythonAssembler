@@ -11,17 +11,18 @@ class Assembler:
                 temp.append(line.strip())
         self.instructions = temp
 
-
     def write_to_file(self, array):
         with open(self.output, 'w') as file:
             file.write("v2.0 raw \n")
             for line in array:
-                file.write(line+"\t")
+                file.write(line + "\t")
+
     def start(self):
         self.read_ins()
-        conv =Converter(self.instructions)
+        conv = Converter(self.instructions)
         conv.convert()
         self.write_to_file(conv.hex_codes)
+
 
 class Converter:
     def __init__(self, instructions):
@@ -72,7 +73,6 @@ class Converter:
                 binary_code += "".join(registers)
                 binary_code = opcode + binary_code + "000"
 
-                print(binary_code)
             elif (
                     operation == "ADDI"
                     or operation == "SUBI"
@@ -86,22 +86,23 @@ class Converter:
                 registers = self.reg_to_binary(dest=dest, src_1=src_1)
                 immediate = self.imm_to_binary(imm=imm)
                 binary_code = opcode + "".join(registers) + "".join(immediate)
+
             elif operation == "LD":
                 dest = arguments[0]
                 address = arguments[1]
                 registers = self.reg_to_binary(dest=dest)
-                address = self.address_to_binary(11, address=address)
-                binary_code = opcode + "".join(registers) + "".join(address)
+                address = self.address_to_binary(10, address=address)
+                binary_code = opcode + "".join(registers) + "".join(address) + "0"
             elif operation == "ST":
                 src_1 = arguments[0]
                 address = arguments[1]
                 registers = self.reg_to_binary(src_1=src_1)
-                address = self.address_to_binary(11, address=address)
-                binary_code = opcode + "".join(registers) + "".join(address)
+                address = self.address_to_binary(10, address=address)
+                binary_code = opcode + "".join(registers) + "".join(address) + "0"
             elif operation == "JUMP":
                 address = arguments[0]
-                address = self.address_to_binary(15, address=address)
-                binary_code = opcode + "".join(address)
+                address = self.address_to_binary(10, address=address)
+                binary_code = opcode + "".join(address) + "00000"
             elif operation == "PUSH" or operation == "POP":
                 src_1 = arguments[0]
                 registers = self.reg_to_binary(src_1=src_1)
@@ -114,14 +115,12 @@ class Converter:
                 address = self.address_to_binary(7, addrs=addrs)
                 binary_code = opcode + "".join(registers) + "".join(address)
             self.binary_codes.append(binary_code)
-            print(binary_code)
-            self.binary_to_hex()
+        self.binary_to_hex()
 
     def binary_to_hex(self):
         for binary in self.binary_codes:
             hexa = hex(int(binary, 2))
             self.hex_codes.append(hexa[2:].upper())
-
     @staticmethod
     def reg_to_binary(**kwargs):
         binary = []
